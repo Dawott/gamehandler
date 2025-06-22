@@ -109,11 +109,9 @@
       </div>
 
       <!-- Refresh -->
-       <template #fixed>
-      <ion-refresher @ionRefresh="handleRefresh($event)">
+      <ion-refresher slot="fixed" @ionRefresh="handleRefresh($event)">
         <ion-refresher-content></ion-refresher-content>
       </ion-refresher>
-      </template>
     </ion-content>
 
     <!-- Create Team Modal -->

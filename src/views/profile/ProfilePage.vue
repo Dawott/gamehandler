@@ -3,16 +3,14 @@
     <ion-header :translucent="true">
       <ion-toolbar>
         <ion-title>Profil</ion-title>
-        <template #end>
-          <ion-button 
+          <ion-button slot="end"
             v-if="hasProfile && !isEditing"
             fill="clear" 
             @click="isEditing = true"
           >
             <ion-icon :icon="createOutline"></ion-icon>
-          </ion-button>
-        </template>
-      </ion-toolbar>
+      </ion-button>
+    </ion-toolbar>
     </ion-header>
 
     <ion-content :fullscreen="true" class="ion-padding">
@@ -102,9 +100,7 @@
           :disabled="loading"
           class="logout-button"
         >
-          <template #start>
-            <ion-icon :icon="logOutOutline"></ion-icon>
-          </template>
+          <ion-icon slot="start" :icon="logOutOutline"></ion-icon>
           {{ loading ? 'Wylogowuję...' : 'Wyloguj' }}
         </ion-button>
       </div>

@@ -9,6 +9,11 @@
           <ion-label>Drużyny</ion-label>
         </ion-tab-button>
 
+        <ion-tab-button tab="my-teams" href="/tabs/my-teams">
+          <ion-icon :icon="peopleCircleOutline"></ion-icon>
+          <ion-label>Moje Drużyny</ion-label>
+        </ion-tab-button>
+
         <ion-tab-button tab="profile" href="/tabs/profile">
           <ion-icon :icon="personOutline"></ion-icon>
           <ion-label>Profil</ion-label>
@@ -29,5 +34,5 @@ import {
   IonLabel,
   IonRouterOutlet
 } from '@ionic/vue'
-import { peopleOutline, personOutline } from 'ionicons/icons'
+import { peopleCircleOutline, peopleOutline, personOutline } from 'ionicons/icons'
 </script>
