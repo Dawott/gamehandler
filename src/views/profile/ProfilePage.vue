@@ -3,14 +3,14 @@
     <ion-header :translucent="true">
       <ion-toolbar>
         <ion-title>Profil</ion-title>
-          <ion-button slot="end"
-            v-if="hasProfile && !isEditing"
-            fill="clear" 
-            @click="isEditing = true"
-          >
-            <ion-icon :icon="createOutline"></ion-icon>
-      </ion-button>
-    </ion-toolbar>
+        <ion-button slot="end"
+          v-if="hasProfile && !isEditing"
+          fill="clear" 
+          @click="isEditing = true"
+        >
+          <ion-icon :icon="createOutline"></ion-icon>
+        </ion-button>
+      </ion-toolbar>
     </ion-header>
 
     <ion-content :fullscreen="true" class="ion-padding">
@@ -26,7 +26,7 @@
         :initial-data="profile"
         :is-edit="isEditing"
         @success="handleProfileSuccess"
-        @cancel="isEditing = false"
+        @cancel="handleCancel"
       />
 
       <!-- Profile Display -->
@@ -139,7 +139,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   IonPage,
@@ -177,7 +177,7 @@ import type { Team } from '@/types'
 
 const router = useRouter()
 const { user, loading, logout } = useAuth()
-const { profile, loading: profileLoading, hasProfile, loadProfile } = useProfile()
+const { profile, loading: profileLoading, hasProfile, loadProfile, clearProfile } = useProfile()
 const { getUserTeams, loading: teamsLoading } = useTeams()
 
 const isEditing = ref(false)
@@ -194,6 +194,7 @@ const hasSocialLinks = computed(() => {
 // Methods
 const handleLogout = async () => {
   try {
+    clearProfile() // Clear profile state before logout
     await logout()
     router.replace('/auth')
   } catch (error) {
@@ -201,15 +202,30 @@ const handleLogout = async () => {
   }
 }
 
-const handleProfileSuccess = async () => {
-  // Reload profile data after save
+const handleProfileSuccess = async (savedProfile: any) => {
+  console.log('Profile success handler called with:', savedProfile)
+  
+  // Force reload of profile from database to ensure consistency
+  await nextTick()
   await loadProfile()
+  
+  // Set editing to false
   isEditing.value = false
-  await loadUserTeams()
+  
+  // Load teams if we now have a profile
+  if (hasProfile.value) {
+    await loadUserTeams()
+  }
+  
+  console.log('Profile state after success:', { hasProfile: hasProfile.value, profile: profile.value })
+}
+
+const handleCancel = () => {
+  isEditing.value = false
 }
 
 const loadUserTeams = async () => {
-  if (user.value) {
+  if (user.value && hasProfile.value) {
     userTeams.value = await getUserTeams()
   }
 }
@@ -219,15 +235,31 @@ const openTeamDetails = (team: Team) => {
   showDetailsModal.value = true
 }
 
+// Watch for user changes
+watch(user, async (newUser) => {
+  if (newUser) {
+    console.log('User changed, loading profile for:', newUser.uid)
+    await loadProfile()
+  } else {
+    clearProfile()
+    userTeams.value = []
+  }
+}, { immediate: true })
+
+// Watch for profile changes to load teams
+watch(hasProfile, async (newHasProfile) => {
+  console.log('hasProfile changed to:', newHasProfile)
+  if (newHasProfile) {
+    await loadUserTeams()
+  }
+})
+
 // Load profile on mount
 onMounted(async () => {
+  console.log('ProfilePage mounted, user:', user.value?.uid)
   if (user.value) {
-    // Always try to load profile on mount
     await loadProfile()
-    // Only load teams if profile exists
-    if (hasProfile.value) {
-      await loadUserTeams()
-    }
+    console.log('After loadProfile - hasProfile:', hasProfile.value, 'profile:', profile.value)
   }
 })
 </script>

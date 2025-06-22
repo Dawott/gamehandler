@@ -17,15 +17,23 @@ export function useProfile() {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
+  
   // Sprawdz czy user zakonczyl setup profilu
   const hasProfile = computed(() => {
-    return profile.value && profile.value.name && profile.value.name.trim().length > 0
+    return !!(profile.value && 
+             profile.value.name && 
+             profile.value.name.trim().length > 0 &&
+             profile.value.location &&
+             profile.value.favoriteGame)
   })
 
   // Ładuj profil z bazy
   const loadProfile = async (userId?: string) => {
     const uid = userId || user.value?.uid
-    if (!uid) return null
+    if (!uid) {
+      profile.value = null
+      return null
+    }
 
     try {
       loading.value = true
@@ -35,15 +43,19 @@ export function useProfile() {
       const snapshot = await get(userRef)
       
       if (snapshot.exists()) {
-        profile.value = snapshot.val() as UserProfile
-        return profile.value
+        const profileData = snapshot.val() as UserProfile
+        profile.value = profileData
+        console.log('Profile loaded:', profileData) // Debug log
+        return profileData
       } else {
         profile.value = null
+        console.log('No profile found for user:', uid) // Debug log
         return null
       }
     } catch (err: any) {
       error.value = 'Nie udało się załadować profilu'
       console.error('Błąd ładowania profilu:', err)
+      profile.value = null
       throw err
     } finally {
       loading.value = false
@@ -65,7 +77,11 @@ export function useProfile() {
         location: profileData.location || '',
         favoriteGame: profileData.favoriteGame || '',
         avatar: profileData.avatar || '',
-        socials: profileData.socials || {},
+        socials: {
+          discord: profileData.socials?.discord || '',
+          twitter: profileData.socials?.twitter || '',
+          steam: profileData.socials?.steam || ''
+        },
         teams: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -74,7 +90,9 @@ export function useProfile() {
       const userRef = dbRef(database, `users/${user.value.uid}`)
       await set(userRef, newProfile)
       
+      // Update stanu lokalnego
       profile.value = newProfile
+      console.log('Profile created:', newProfile) // Debug log
       return newProfile
     } catch (err: any) {
       error.value = 'Nie udało się utworzyć profilu'
@@ -93,9 +111,13 @@ export function useProfile() {
       loading.value = true
       error.value = null
 
-      const updatedProfile = {
+      const updatedProfile: UserProfile = {
         ...profile.value,
         ...updates,
+        socials: {
+          ...profile.value.socials,
+          ...updates.socials
+        },
         updatedAt: new Date().toISOString()
       }
 
@@ -103,6 +125,7 @@ export function useProfile() {
       await set(userRef, updatedProfile)
       
       profile.value = updatedProfile
+      console.log('Profile updated:', updatedProfile) // Debug log
       return updatedProfile
     } catch (err: any) {
       error.value = 'Nie udało się zaktualizować profilu'
@@ -115,6 +138,7 @@ export function useProfile() {
 
   // Save profile (create or update)
   const saveProfile = async (profileData: Partial<UserProfile>) => {
+    console.log('Saving profile with data:', profileData)
     if (profile.value) {
       return await updateProfile(profileData)
     } else {
@@ -137,6 +161,10 @@ export function useProfile() {
     }
   }
 
+  const clearProfile = () => {
+    profile.value = null
+  }
+
   return {
     profile,
     loading,
@@ -146,6 +174,7 @@ export function useProfile() {
     createProfile,
     updateProfile,
     saveProfile,
-    checkProfileExists
+    checkProfileExists,
+    clearProfile
   }
 }

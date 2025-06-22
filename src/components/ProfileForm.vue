@@ -236,9 +236,18 @@ const showSuccessToast = ref(false)
 
 // Computed
 const isFormValid = computed(() => {
-  return formData.value.name.trim().length > 0 &&
+  const isValid = formData.value.name.trim().length > 0 &&
          formData.value.location.length > 0 &&
          formData.value.favoriteGame.length > 0
+  
+  console.log('Form validation:', {
+    name: formData.value.name.trim().length > 0,
+    location: formData.value.location.length > 0,
+    favoriteGame: formData.value.favoriteGame.length > 0,
+    isValid
+  })
+  
+  return isValid
 })
 
 // Methods
@@ -247,16 +256,17 @@ const clearError = () => {
 }
 
 const handleSubmit = async () => {
-  if (!isFormValid.value) return
+  if (!isFormValid.value) {
+    console.log('Form is not valid:', formData.value)
+    return
+  }
 
   try {
     const savedProfile = await saveProfile(formData.value)
     showSuccessToast.value = true
     
     // Wait a bit for the toast to show
-    setTimeout(() => {
-      emit('success', savedProfile)
-    }, 500)
+    emit('success', savedProfile)
   } catch (err) {
     console.error('Błąd zapisu profilu:', err)
   }

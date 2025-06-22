@@ -51,8 +51,9 @@
             @click="handleLogin" 
             :disabled="loading || !isLoginFormValid"
             class="auth-button"
-          ><template #start>
-            <ion-spinner v-if="loading"></ion-spinner>
+          >
+            <template #start>
+              <ion-spinner v-if="loading"></ion-spinner>
             </template>
             {{ loading ? 'Loguję...' : 'Zaloguj' }}
           </ion-button>
@@ -96,8 +97,8 @@
             :disabled="loading || !isRegisterFormValid"
             class="auth-button"
           >
-          <template #start>
-            <ion-spinner v-if="loading"></ion-spinner>
+            <template #start>
+              <ion-spinner v-if="loading"></ion-spinner>
             </template>
             {{ loading ? 'Tworzę konto...' : 'Utwórz konto' }}
           </ion-button>
@@ -137,11 +138,9 @@ import {
 } from '@ionic/vue'
 import { gameControllerOutline } from 'ionicons/icons'
 import { useAuth } from '@/composables/useAuth'
-import { useProfile } from '@/composables/useProfile'
 
 const router = useRouter()
 const { user, loading, error, login, register } = useAuth()
-const { loadProfile } = useProfile()
 
 const authMode = ref<'login' | 'register'>('login')
 
@@ -191,7 +190,8 @@ const handleRegister = async () => {
 // Watch for successful authentication
 watch(user, async (newUser) => {
   if (newUser) {
-    await loadProfile()
+    console.log('User authenticated, redirecting to profile page')
+    // Don't load profile here - let ProfilePage handle it
     router.replace('/tabs/profile')
   }
 })
