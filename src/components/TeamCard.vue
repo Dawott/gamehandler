@@ -1,13 +1,24 @@
 <template>
   <ion-card @click="$emit('click', team)" button>
     <ion-card-header>
+      <div class="card-header-content">
+        <div class="title-section">
       <ion-card-title>{{ team.name }}</ion-card-title>
+      <ion-badge 
+            v-if="isUserOwner && pendingRequestsCount > 0" 
+            color="warning"
+            class="notification-badge"
+          >
+            {{ pendingRequestsCount }}
+          </ion-badge>
+        </div>
       <ion-card-subtitle>
         <ion-chip :color="isTeamFull ? 'danger' : 'success'">
           <ion-icon :icon="peopleOutline"></ion-icon>
           <ion-label>{{ team.currentMembers }}/{{ team.maxMembers }}</ion-label>
         </ion-chip>
       </ion-card-subtitle>
+      </div>
     </ion-card-header>
 
     <ion-card-content>
@@ -36,13 +47,19 @@
         <ion-badge v-if="isUserOwner" color="primary">Właściciel</ion-badge>
         <ion-badge v-else-if="isUserMember" color="secondary">Członek</ion-badge>
         <ion-badge v-else-if="isTeamFull" color="medium">Pełna</ion-badge>
+        <ion-badge 
+          v-if="isUserOwner && pendingRequestsCount > 0" 
+          color="warning"
+        >
+          {{ pendingRequestsCount }} {{ pendingRequestsCount > 1 ? 'Próśb o dołączenie' : 'Prośba o dołączenie' }}
+        </ion-badge>
       </div>
     </ion-card-content>
   </ion-card>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import {
   IonCard,
   IonCardHeader,
@@ -61,14 +78,18 @@ import {
   calendarOutline
 } from 'ionicons/icons'
 import { useAuth } from '@/composables/useAuth'
+import { useJoinRequests } from '@/composables/useJoinRequests'
 import type { Team } from '@/types'
 
 // Props
 interface Props {
   team: Team
+  showNotifications?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  showNotifications: true
+})
 
 // Emits
 defineEmits<{
@@ -77,6 +98,9 @@ defineEmits<{
 
 // Composables
 const { user } = useAuth()
+const { getPendingRequestsCount } = useJoinRequests()
+
+const pendingRequestsCount = ref(0)
 
 // Computed
 const isTeamFull = computed(() => {
@@ -103,6 +127,36 @@ const truncateDescription = (description: string) => {
   if (description.length <= maxLength) return description
   return description.substring(0, maxLength) + '...'
 }
+
+const loadPendingRequestsCount = async () => {
+  if (!props.showNotifications || !isUserOwner.value) return
+  
+  try {
+    pendingRequestsCount.value = await getPendingRequestsCount(props.team.id)
+  } catch (error) {
+    console.error('Error loading pending requests count:', error)
+    pendingRequestsCount.value = 0
+  }
+}
+
+// Watch for team changes
+watch(() => props.team, async () => {
+  if (isUserOwner.value) {
+    await loadPendingRequestsCount()
+  }
+}, { immediate: true })
+
+// Load pending requests count on mount
+onMounted(async () => {
+  if (isUserOwner.value) {
+    await loadPendingRequestsCount()
+  }
+})
+
+// Expose method to refresh count (useful when requests are processed)
+defineExpose({
+  refreshNotifications: loadPendingRequestsCount
+})
 </script>
 
 <style scoped>

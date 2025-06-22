@@ -68,6 +68,7 @@
       :is-open="showDetailsModal"
       :team="selectedTeam"
       @close="showDetailsModal = false"
+      @request-processed="handleRequestProcessed"
     />
   </ion-page>
 </template>
@@ -129,6 +130,11 @@ const goToTeams = () => {
 const handleTeamCreated = async () => {
   showCreateModal.value = false
   // Reload user teams to show the newly created team
+  await loadUserTeams()
+}
+
+const handleRequestProcessed = async () => {
+  // Refresh team data to update member counts
   await loadUserTeams()
 }
 

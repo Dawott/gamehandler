@@ -70,6 +70,87 @@
         </ion-card-content>
       </ion-card>
 
+      <!-- PENDING REQUESTS SECTION - Only visible to team owner -->
+      <ion-card v-if="isUserOwner && pendingRequests.length > 0">
+        <ion-card-header>
+          <ion-card-title>
+            Prośby o dołączenie
+            <ion-badge color="warning">{{ pendingRequests.length }}</ion-badge>
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="requests-list">
+            <div 
+              v-for="request in pendingRequests" 
+              :key="request.id"
+              class="request-item"
+            >
+              <div class="request-info">
+                <ion-avatar>
+                  <ion-icon :icon="personOutline"></ion-icon>
+                </ion-avatar>
+                <div class="request-details">
+                  <h4>{{ request.userName }}</h4>
+                  <p v-if="request.userLocation">
+                    <ion-icon :icon="locationOutline"></ion-icon>
+                    {{ request.userLocation }}
+                  </p>
+                  <p v-if="request.userGame">
+                    <ion-icon :icon="gameControllerOutline"></ion-icon>
+                    {{ request.userGame }}
+                  </p>
+                  <p class="request-date">
+                    Poproszono: {{ formatDate(request.createdAt) }}
+                  </p>
+                </div>
+              </div>
+              
+              <div class="request-actions">
+                <ion-button 
+                  size="small" 
+                  color="success"
+                  @click="handleApprove(request)"
+                  :disabled="requestsLoading"
+                >
+                  <ion-icon :icon="checkmarkOutline"></ion-icon>
+                  Zaakceptuj
+                </ion-button>
+                <ion-button 
+                  size="small" 
+                  color="danger" 
+                  fill="outline"
+                  @click="handleReject(request)"
+                  :disabled="requestsLoading"
+                >
+                  <ion-icon :icon="closeOutline"></ion-icon>
+                  Odrzuć
+                </ion-button>
+              </div>
+            </div>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Loading state for requests -->
+      <ion-card v-else-if="isUserOwner && requestsLoading">
+        <ion-card-content>
+          <div class="loading-requests">
+            <ion-spinner></ion-spinner>
+            <p>Ładowanie próśb...</p>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- No pending requests message for owners -->
+      <ion-card v-else-if="isUserOwner && pendingRequests.length === 0 && !requestsLoading">
+        <ion-card-header>
+          <ion-card-title>Prośby o dołączenie</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p class="no-requests">Brak próśb w toku</p>
+        </ion-card-content>
+      </ion-card>
+
       <!-- Description -->
       <ion-card v-if="team.description">
         <ion-card-header>
@@ -189,12 +270,14 @@ import {
   locationOutline,
   calendarOutline,
   personOutline,
-  timeOutline
+  timeOutline,
+  checkmarkOutline
 } from 'ionicons/icons'
 import { useAuth } from '@/composables/useAuth'
 import { useTeams } from '@/composables/useTeams'
 import { useProfile } from '@/composables/useProfile'
-import type { Team } from '@/types'
+import type { Team, JoinRequest } from '@/types'
+import { useJoinRequests } from '@/composables/useJoinRequests'
 
 // Props
 interface Props {
@@ -208,16 +291,24 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   close: []
   'join-requested': []
+  'request-processed': []
 }>()
 
 // Composables
 const { user } = useAuth()
+const { 
+  loading: requestsLoading, 
+  getPendingRequests, 
+  approveRequest, 
+  rejectRequest 
+} = useJoinRequests()
 const { requestJoinTeam, checkPendingRequest, loading } = useTeams()
 const { loadProfile, profile } = useProfile()
 
 // State
 const ownerName = ref<string>('')
 const memberNames = ref<Record<string, string>>({})
+const pendingRequests = ref<any[]>([])
 const hasPendingRequest = ref(false)
 
 // Computed
@@ -302,13 +393,119 @@ const handleJoinRequest = async () => {
   }
 }
 
+const loadPendingRequests = async () => {
+  if (!props.team || !isUserOwner.value) return
+  
+  try {
+    pendingRequests.value = await getPendingRequests(props.team.id)
+  } catch (error) {
+    console.error('Błąd ładowania próśb:', error)
+  }
+}
+
+const handleApprove = async (request: any) => {
+  if (!props.team) return
+
+  const alert = await alertController.create({
+    header: 'Zaakceptuj Prośbę',
+    message: `Czy chcesz przyjąć ${request.userName} do drużyny?`,
+    buttons: [
+      {
+        text: 'Anuluj',
+        role: 'cancel'
+      },
+      {
+        text: 'Zaakceptuj',
+        handler: async () => {
+          try {
+            await approveRequest(request.id, props.team!.id, request.userId)
+            
+            const toast = await toastController.create({
+              message: `${request.userName} został przyjęty!`,
+              duration: 2000,
+              color: 'success'
+            })
+            await toast.present()
+
+            // Reload requests and emit update
+            await loadPendingRequests()
+            emit('request-processed')
+          } catch (error: any) {
+            const toast = await toastController.create({
+              message: error.message || 'Nie udało się zaakceptować prośby',
+              duration: 2000,
+              color: 'danger'
+            })
+            await toast.present()
+          }
+        }
+      }
+    ]
+  })
+  await alert.present()
+}
+
+const handleReject = async (request: any) => {
+  if (!props.team) return
+
+  const alert = await alertController.create({
+    header: 'Odrzuć prośbę',
+    message: `Czy na pewno chcesz odrzucić prośbę od ${request.userName} o dołączenie do drużyny?`,
+    buttons: [
+      {
+        text: 'Anuluj',
+        role: 'cancel'
+      },
+      {
+        text: 'Odrzuć',
+        handler: async () => {
+          try {
+            await rejectRequest(request.id, props.team!.id)
+            
+            const toast = await toastController.create({
+              message: `Prośba ${request.userName} odrzucona`,
+              duration: 2000,
+              color: 'warning'
+            })
+            await toast.present()
+
+            // Reload requests
+            await loadPendingRequests()
+            emit('request-processed')
+          } catch (error: any) {
+            const toast = await toastController.create({
+              message: error.message || 'Nie udało się odrzucić prośby',
+              duration: 2000,
+              color: 'danger'
+            })
+            await toast.present()
+          }
+        }
+      }
+    ]
+  })
+  await alert.present()
+}
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('pl-PL', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+
+
 // Watch for team changes
 watch(() => props.team, async (newTeam) => {
   if (newTeam) {
     await Promise.all([
       loadMemberNames(),
       checkRequestStatus(),
-      loadProfile() // Load profile to check username
+      loadProfile(),
+      isUserOwner.value ? loadPendingRequests() : Promise.resolve()
     ])
   }
 }, { immediate: true })
@@ -370,5 +567,69 @@ ion-item {
 
 ion-card {
   margin-bottom: 1rem;
+}
+
+.requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.request-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid var(--ion-color-light);
+  border-radius: 8px;
+  background: var(--ion-color-light-tint);
+}
+
+.request-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.request-details h4 {
+  margin: 0 0 0.5rem 0;
+  color: var(--ion-color-primary);
+}
+
+.request-details p {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+  color: var(--ion-color-medium);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.request-details .request-date {
+  font-size: 0.8rem;
+}
+
+.request-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.loading-requests {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  gap: 0.5rem;
+}
+
+.no-requests {
+  text-align: center;
+  color: var(--ion-color-medium);
+  font-style: italic;
+}
+
+ion-badge {
+  margin-left: 0.5rem;
 }
 </style>
