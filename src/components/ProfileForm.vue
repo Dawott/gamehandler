@@ -195,6 +195,10 @@ import { LOCATIONS, GAME_SYSTEMS } from '@/data/constants'
 import { useProfile } from '@/composables/useProfile'
 import type { UserProfile } from '@/types'
 
+defineOptions({
+  name: 'ProfileForm'
+})
+
 // Props
 interface Props {
   initialData?: UserProfile | null

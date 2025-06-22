@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router'
 import { RouteRecordRaw } from 'vue-router'
+import { auth } from '@/firebase/config'
+import { onAuthStateChanged } from 'firebase/auth'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -38,21 +40,24 @@ const router = createRouter({
   routes
 })
 
-// Simple auth guard (we'll enhance this later)
-router.beforeEach(async (to) => {
-  // Allow access to auth page
-  if (to.path === '/auth') {
-    return true
-  }
-  
-  // For now, just redirect to auth if not authenticated
-  // We'll add proper auth checking later
-  const isAuthenticated = localStorage.getItem('firebase-auth-token')
-  if (!isAuthenticated && to.path !== '/auth') {
-    return '/auth'
-  }
-  
-  return true
+router.beforeEach((to, from, next) => {
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    unsubscribe() // Clean up the listener
+    
+    if (to.path === '/auth') {
+      if (user) {
+        next('/tabs/teams')
+      } else {
+        next()
+      }
+    } else {
+      if (user) {
+        next()
+      } else {
+        next('/auth')
+      }
+    }
+  })
 })
 
 export default router
