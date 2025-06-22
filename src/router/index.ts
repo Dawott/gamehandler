@@ -5,12 +5,19 @@ import HomePage from '../views/HomePage.vue'
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    redirect: '/home'
+    redirect: '/tabs/teams'
   },
   {
-    path: '/home',
-    name: 'Home',
-    component: HomePage
+    path: '/auth',
+    name: 'Auth',
+    component: () => import('../views/auth/AuthPage.vue')
+  },
+  {
+    path: '/tabs',
+    component: () => import('../views/TabsPage.vue'),
+    children: [
+      
+    ]
   }
 ]
 
