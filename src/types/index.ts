@@ -1,4 +1,4 @@
-export interface User {
+export interface UserProfile {
   id: string
   email: string
   name: string
@@ -11,6 +11,8 @@ export interface User {
     steam?: string
   }
   teams: string[]
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Team {
@@ -24,4 +26,18 @@ export interface Team {
   members: Record<string, 'owner' | 'member'>
   meetingTimes: string[]
   description?: string
+  createdAt: string
+  updatedAt: string
 }
+
+export interface JoinRequest {
+  id: string
+  teamId: string
+  userId: string
+  status: 'pending' | 'approved' | 'rejected'
+  createdAt: string
+  updatedAt: string
+}
+
+export type TeamRole = 'owner' | 'member'
+export type JoinRequestStatus = 'pending' | 'approved' | 'rejected'
