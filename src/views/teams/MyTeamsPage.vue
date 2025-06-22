@@ -3,6 +3,14 @@
     <ion-header :translucent="true">
       <ion-toolbar>
         <ion-title>Moje Drużyny</ion-title>
+        <template #end>
+          <ion-button 
+            fill="clear" 
+            @click="showCreateModal = true"
+          >
+            <ion-icon :icon="addOutline"></ion-icon>
+          </ion-button>
+        </template>
       </ion-toolbar>
     </ion-header>
 
@@ -27,10 +35,19 @@
       <div v-else class="empty-state">
         <ion-icon :icon="peopleCircleOutline" size="large"></ion-icon>
         <h3>Brak drużyn</h3>
-        <p>Nie należysz jeszcze do żadnej drużyny. Przeglądaj dostępne drużyny i dołącz do swojej pierwszej!</p>
-        <ion-button @click="goToTeams">
-          Przeglądaj drużyny
-        </ion-button>
+        <p>Nie należysz jeszcze do żadnej drużyny. Stwórz swoją pierwszą drużynę lub przeglądaj dostępne drużyny!</p>
+        
+        <div class="empty-actions">
+          <ion-button @click="showCreateModal = true" expand="block">
+            <ion-icon slot="start" :icon="addOutline"></ion-icon>
+            Stwórz drużynę
+          </ion-button>
+          
+          <ion-button @click="goToTeams" expand="block" fill="outline">
+            <ion-icon slot="start" :icon="searchOutline"></ion-icon>
+            Przeglądaj drużyny
+          </ion-button>
+        </div>
       </div>
 
       <!-- Refresh -->
@@ -38,6 +55,13 @@
         <ion-refresher-content></ion-refresher-content>
       </ion-refresher>
     </ion-content>
+
+    <!-- Create Team Modal -->
+    <CreateTeamModal
+      :is-open="showCreateModal"
+      @close="showCreateModal = false"
+      @success="handleTeamCreated"
+    />
 
     <!-- Team Details Modal -->
     <TeamDetailsModal
@@ -63,11 +87,12 @@ import {
   IonRefresher,
   IonRefresherContent
 } from '@ionic/vue'
-import { peopleCircleOutline } from 'ionicons/icons'
+import { peopleCircleOutline, addOutline, searchOutline } from 'ionicons/icons'
 import { useAuth } from '@/composables/useAuth'
 import { useTeams } from '@/composables/useTeams'
 import TeamCard from '@/components/TeamCard.vue'
 import TeamDetailsModal from '@/components/TeamDetailsModal.vue'
+import CreateTeamModal from '@/components/CreateTeamModal.vue'
 import type { Team } from '@/types'
 
 const router = useRouter()
@@ -77,6 +102,7 @@ const { getUserTeams, loading } = useTeams()
 // State
 const userTeams = ref<Team[]>([])
 const showDetailsModal = ref(false)
+const showCreateModal = ref(false)
 const selectedTeam = ref<Team | null>(null)
 
 // Methods
@@ -98,6 +124,12 @@ const openTeamDetails = (team: Team) => {
 
 const goToTeams = () => {
   router.push('/tabs/teams')
+}
+
+const handleTeamCreated = async () => {
+  showCreateModal.value = false
+  // Reload user teams to show the newly created team
+  await loadUserTeams()
 }
 
 // Lifecycle
@@ -144,5 +176,13 @@ onMounted(async () => {
   color: var(--ion-color-medium);
   margin-bottom: 1.5rem;
   max-width: 300px;
+}
+
+.empty-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 280px;
 }
 </style>
