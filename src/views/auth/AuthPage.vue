@@ -137,9 +137,11 @@ import {
 } from '@ionic/vue'
 import { gameControllerOutline } from 'ionicons/icons'
 import { useAuth } from '@/composables/useAuth'
+import { useProfile } from '@/composables/useProfile'
 
 const router = useRouter()
 const { user, loading, error, login, register } = useAuth()
+const { loadProfile } = useProfile()
 
 const authMode = ref<'login' | 'register'>('login')
 
@@ -187,9 +189,10 @@ const handleRegister = async () => {
 }
 
 // Watch for successful authentication
-watch(user, (newUser) => {
+watch(user, async (newUser) => {
   if (newUser) {
-    router.replace('/tabs/teams')
+    await loadProfile()
+    router.replace('/tabs/profile')
   }
 })
 </script>

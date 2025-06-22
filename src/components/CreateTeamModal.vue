@@ -118,7 +118,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import {
   IonModal,
   IonHeader,
@@ -134,10 +134,12 @@ import {
   IonSelectOption,
   IonTextarea,
   IonSpinner,
-  toastController
+  toastController,
+  alertController
 } from '@ionic/vue'
 import { closeOutline } from 'ionicons/icons'
 import { useTeams } from '@/composables/useTeams'
+import { useProfile } from '@/composables/useProfile'
 import { GAME_SYSTEMS, LOCATIONS, MEETING_TIME_OPTIONS } from '@/data/constants'
 
 // Props
@@ -155,6 +157,7 @@ const emit = defineEmits<{
 
 // Composables
 const { createTeam, loading } = useTeams()
+const { profile, loadProfile } = useProfile()
 
 // Form data
 const formData = ref({
@@ -195,6 +198,28 @@ const resetForm = () => {
 const handleSubmit = async () => {
   if (!isFormValid.value) return
 
+  // Check if user has a username
+  if (!profile.value) {
+    await loadProfile()
+  }
+  
+  if (!profile.value?.name) {
+    const alert = await alertController.create({
+      header: 'Uzupełnij profil',
+      message: 'Musisz uzupełnić swoją nazwę użytkownika przed utworzeniem drużyny.',
+      buttons: [
+        {
+          text: 'OK',
+          handler: () => {
+            handleDismiss()
+          }
+        }
+      ]
+    })
+    await alert.present()
+    return
+  }
+
   try {
     await createTeam(formData.value)
     
@@ -216,6 +241,11 @@ const handleSubmit = async () => {
     await toast.present()
   }
 }
+
+// Load profile on mount
+onMounted(async () => {
+  await loadProfile()
+})
 </script>
 
 <style scoped>

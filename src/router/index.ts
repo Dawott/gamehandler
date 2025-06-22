@@ -6,7 +6,7 @@ import { onAuthStateChanged } from 'firebase/auth'
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    redirect: '/tabs/teams'
+    redirect: '/tabs/profile'
   },
   {
     path: '/auth',
@@ -19,7 +19,7 @@ const routes: Array<RouteRecordRaw> = [
     children: [
       {
         path: '',
-        redirect: '/tabs/teams'
+        redirect: '/tabs/profile'
       },
       {
         path: 'teams',
@@ -51,7 +51,7 @@ router.beforeEach((to, from, next) => {
     
     if (to.path === '/auth') {
       if (user) {
-        next('/tabs/teams')
+        next('/tabs/profile')
       } else {
         next()
       }

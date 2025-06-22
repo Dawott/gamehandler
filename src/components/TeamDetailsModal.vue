@@ -179,7 +179,8 @@ import {
   IonAvatar,
   IonBadge,
   IonSpinner,
-  toastController
+  toastController,
+  alertController
 } from '@ionic/vue'
 import {
   closeOutline,
@@ -212,7 +213,7 @@ const emit = defineEmits<{
 // Composables
 const { user } = useAuth()
 const { requestJoinTeam, checkPendingRequest, loading } = useTeams()
-const { loadProfile } = useProfile()
+const { loadProfile, profile } = useProfile()
 
 // State
 const ownerName = ref<string>('')
@@ -264,6 +265,21 @@ const checkRequestStatus = async () => {
 const handleJoinRequest = async () => {
   if (!props.team) return
 
+  // Check if user has a username
+  if (!profile.value) {
+    await loadProfile()
+  }
+  
+  if (!profile.value?.name) {
+    const alert = await alertController.create({
+      header: 'Uzupełnij profil',
+      message: 'Musisz uzupełnić swoją nazwę użytkownika przed dołączeniem do drużyny.',
+      buttons: ['OK']
+    })
+    await alert.present()
+    return
+  }
+
   try {
     await requestJoinTeam(props.team.id)
     
@@ -291,7 +307,8 @@ watch(() => props.team, async (newTeam) => {
   if (newTeam) {
     await Promise.all([
       loadMemberNames(),
-      checkRequestStatus()
+      checkRequestStatus(),
+      loadProfile() // Load profile to check username
     ])
   }
 }, { immediate: true })

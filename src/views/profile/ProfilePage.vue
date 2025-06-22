@@ -83,11 +83,34 @@
             <ion-card-title>Moje drużyny</ion-card-title>
           </ion-card-header>
           <ion-card-content>
-            <p v-if="!profile?.teams?.length">
+            <div v-if="teamsLoading" class="teams-loading">
+              <ion-spinner></ion-spinner>
+              <p>Ładuję drużyny...</p>
+            </div>
+            <p v-else-if="!userTeams.length">
              Brak drużyn. Odwiedź zakładkę z drużynami, by zapisać się do którejś
             </p>
-            <div v-else>
-              <p>TBD</p>
+            <div v-else class="teams-list">
+              <ion-item 
+                v-for="team in userTeams" 
+                :key="team.id"
+                button
+                @click="openTeamDetails(team)"
+              >
+                <ion-label>
+                  <h3>{{ team.name }}</h3>
+                  <p>
+                    <ion-icon :icon="gameControllerOutline"></ion-icon>
+                    {{ team.game }}
+                  </p>
+                </ion-label>
+                <ion-badge 
+                  slot="end" 
+                  :color="team.ownerId === user?.uid ? 'primary' : 'secondary'"
+                >
+                  {{ team.ownerId === user?.uid ? 'Właściciel' : 'Członek' }}
+                </ion-badge>
+              </ion-item>
             </div>
           </ion-card-content>
         </ion-card>
@@ -105,6 +128,13 @@
         </ion-button>
       </div>
     </ion-content>
+
+    <!-- Team Details Modal -->
+    <TeamDetailsModal
+      :is-open="showDetailsModal"
+      :team="selectedTeam"
+      @close="showDetailsModal = false"
+    />
   </ion-page>
 </template>
 
@@ -124,7 +154,10 @@ import {
   IonButton,
   IonIcon,
   IonAvatar,
-  IonSpinner
+  IonSpinner,
+  IonItem,
+  IonLabel,
+  IonBadge
 } from '@ionic/vue'
 import {
   personOutline,
@@ -137,13 +170,20 @@ import {
 } from 'ionicons/icons'
 import { useAuth } from '@/composables/useAuth'
 import { useProfile } from '@/composables/useProfile'
+import { useTeams } from '@/composables/useTeams'
 import ProfileForm from '@/components/ProfileForm.vue'
+import TeamDetailsModal from '@/components/TeamDetailsModal.vue'
+import type { Team } from '@/types'
 
 const router = useRouter()
 const { user, loading, logout } = useAuth()
 const { profile, loading: profileLoading, hasProfile, loadProfile } = useProfile()
+const { getUserTeams, loading: teamsLoading } = useTeams()
 
 const isEditing = ref(false)
+const userTeams = ref<Team[]>([])
+const showDetailsModal = ref(false)
+const selectedTeam = ref<Team | null>(null)
 
 // Computed
 const hasSocialLinks = computed(() => {
@@ -161,14 +201,33 @@ const handleLogout = async () => {
   }
 }
 
-const handleProfileSuccess = () => {
+const handleProfileSuccess = async () => {
+  // Reload profile data after save
+  await loadProfile()
   isEditing.value = false
+  await loadUserTeams()
+}
+
+const loadUserTeams = async () => {
+  if (user.value) {
+    userTeams.value = await getUserTeams()
+  }
+}
+
+const openTeamDetails = (team: Team) => {
+  selectedTeam.value = team
+  showDetailsModal.value = true
 }
 
 // Load profile on mount
 onMounted(async () => {
   if (user.value) {
+    // Always try to load profile on mount
     await loadProfile()
+    // Only load teams if profile exists
+    if (hasProfile.value) {
+      await loadUserTeams()
+    }
   }
 })
 </script>
@@ -227,5 +286,34 @@ onMounted(async () => {
 
 ion-card {
   margin-bottom: 1rem;
+}
+
+.teams-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  gap: 0.5rem;
+}
+
+.teams-loading p {
+  color: var(--ion-color-medium);
+  font-size: 0.9rem;
+}
+
+.teams-list ion-item {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+}
+
+.teams-list ion-label p {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.teams-list ion-icon {
+  font-size: 14px;
 }
 </style>

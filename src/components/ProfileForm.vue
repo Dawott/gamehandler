@@ -252,7 +252,11 @@ const handleSubmit = async () => {
   try {
     const savedProfile = await saveProfile(formData.value)
     showSuccessToast.value = true
-    emit('success', savedProfile)
+    
+    // Wait a bit for the toast to show
+    setTimeout(() => {
+      emit('success', savedProfile)
+    }, 500)
   } catch (err) {
     console.error('Błąd zapisu profilu:', err)
   }

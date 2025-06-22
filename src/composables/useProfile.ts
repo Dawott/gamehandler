@@ -19,7 +19,7 @@ export function useProfile() {
 
   // Sprawdz czy user zakonczyl setup profilu
   const hasProfile = computed(() => {
-    return profile.value && profile.value.name && profile.value.location && profile.value.favoriteGame
+    return profile.value && profile.value.name && profile.value.name.trim().length > 0
   })
 
   // Ładuj profil z bazy
