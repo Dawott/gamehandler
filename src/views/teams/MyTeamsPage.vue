@@ -3,14 +3,14 @@
     <ion-header :translucent="true">
       <ion-toolbar>
         <ion-title>Moje Drużyny</ion-title>
-        <template #end>
+        
           <ion-button 
             fill="clear" 
             @click="showCreateModal = true"
+            slot="end"
           >
             <ion-icon :icon="addOutline"></ion-icon>
           </ion-button>
-        </template>
       </ion-toolbar>
     </ion-header>
 

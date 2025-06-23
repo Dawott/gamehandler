@@ -3,11 +3,10 @@
     <ion-header>
       <ion-toolbar>
         <ion-title>{{ team?.name || 'Szczegóły drużyny' }}</ion-title>
-        <template #end>
-          <ion-button fill="clear" @click="$emit('close')">
+        
+          <ion-button fill="clear" slot="end" @click="$emit('close')">
             <ion-icon :icon="closeOutline"></ion-icon>
           </ion-button>
-        </template>
       </ion-toolbar>
     </ion-header>
 
@@ -169,11 +168,10 @@
         <ion-card-content>
           <ion-list>
             <ion-item v-for="(role, userId) in team.members" :key="userId">
-                <template #start>
+                
               <ion-avatar>
-                <ion-icon :icon="personOutline"></ion-icon>
+                <ion-icon :icon="personOutline" slot="start"></ion-icon>
               </ion-avatar>
-              </template>
               <ion-label>
                 <h3>{{ memberNames[userId] || 'Ładowanie...' }}</h3>
                 <p>{{ role === 'owner' ? 'Właściciel' : 'Członek' }}</p>

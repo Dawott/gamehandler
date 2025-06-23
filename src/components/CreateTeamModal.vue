@@ -3,11 +3,10 @@
     <ion-header>
       <ion-toolbar>
         <ion-title>Stwórz Drużynę</ion-title>
-        <template #end>
-          <ion-button fill="clear" @click="handleDismiss">
+        
+          <ion-button fill="clear" slot="end" @click="handleDismiss">
             <ion-icon :icon="closeOutline"></ion-icon>
           </ion-button>
-        </template>
       </ion-toolbar>
     </ion-header>
 

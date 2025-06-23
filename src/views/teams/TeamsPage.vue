@@ -3,20 +3,18 @@
     <ion-header :translucent="true">
       <ion-toolbar>
         <ion-title>Znajdź Drużynę</ion-title>
-        <template #end>
           <ion-button 
             fill="clear" 
             @click="showCreateModal = true"
-          >
+            slot="end">
             <ion-icon :icon="addOutline"></ion-icon>
           </ion-button>
-        </template>
-      </ion-toolbar>
-    </ion-header>
+        </ion-toolbar>
+      </ion-header>
 
     <ion-content :fullscreen="true">
       <!-- Filters -->
-      <div class="filters-section">
+     <div class="filters-section">
         <ion-segment scrollable>
           <ion-segment-button @click="showFilters = !showFilters">
             <ion-icon :icon="filterOutline"></ion-icon>
