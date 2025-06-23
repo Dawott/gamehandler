@@ -274,6 +274,76 @@ export function useTeams() {
     }
   }
 
+  const deleteTeam = async (teamId: string) => {
+  if (!user.value?.uid) throw new Error('Użytkownik nie uwierzytelniony')
+
+  try {
+    loading.value = true
+    error.value = null
+
+    console.log('=== DELETING TEAM ===')
+    console.log('Team ID:', teamId)
+    console.log('User ID:', user.value.uid)
+
+    // Get team data first to verify ownership and get member list
+    const teamRef = dbRef(database, `teams/${teamId}`)
+    const teamSnapshot = await get(teamRef)
+    
+    if (!teamSnapshot.exists()) {
+      throw new Error('Drużyna nie znaleziona')
+    }
+    
+    const team = teamSnapshot.val() as Team
+
+    // Verify user is team owner
+    if (team.ownerId !== user.value.uid) {
+      throw new Error('Tylko właściciel może usunąć drużynę')
+    }
+
+    // Prepare atomic updates for deletion
+    const updates: Record<string, any> = {}
+    
+    // Remove team
+    updates[`teams/${teamId}`] = null
+    
+    // Remove team from all members' profiles
+    const memberIds = Object.keys(team.members || {})
+    for (const memberId of memberIds) {
+      updates[`users/${memberId}/teams/${teamId}`] = null
+      updates[`users/${memberId}/updatedAt`] = new Date().toISOString()
+    }
+    
+    // Remove all join requests for this team
+    const requestsRef = dbRef(database, 'joinRequests')
+    const requestsSnapshot = await get(requestsRef)
+    
+    if (requestsSnapshot.exists()) {
+      const allRequests = requestsSnapshot.val()
+      for (const [requestId, request] of Object.entries(allRequests) as [string, any][]) {
+        if (request.teamId === teamId) {
+          updates[`joinRequests/${requestId}`] = null
+        }
+      }
+    }
+
+    console.log('Atomic delete updates:', updates)
+    
+    // Execute all updates atomically
+    await update(dbRef(database), updates)
+    
+    console.log('Team deleted successfully')
+    return true
+    
+  } catch (err: any) {
+    error.value = err.message || 'Nie udało się usunąć drużyny'
+    console.error('Błąd usuwania drużyny:', err)
+    throw err
+  } finally {
+    loading.value = false
+  }
+}
+
+
   // Update filters
   const updateFilters = (newFilters: Partial<typeof filters.value>) => {
     filters.value = { ...filters.value, ...newFilters }
@@ -302,6 +372,7 @@ export function useTeams() {
     checkPendingRequest,
     getUserTeams,
     updateFilters,
-    clearFilters
+    clearFilters,
+    deleteTeam
   }
 }

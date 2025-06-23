@@ -127,6 +127,7 @@
       @close="showDetailsModal = false"
       @join-requested="handleJoinRequested"
       @request-processed="handleRequestProcessed"
+      @team-deleted="handleTeamDeleted"
     />
   </ion-page>
 </template>
@@ -153,7 +154,8 @@ import {
   IonSegmentButton,
   IonSpinner,
   IonRefresher,
-  IonRefresherContent
+  IonRefresherContent,
+  toastController
 } from '@ionic/vue'
 import { 
   peopleOutline, 
@@ -166,6 +168,7 @@ import TeamCard from '@/components/TeamCard.vue'
 import CreateTeamModal from '@/components/CreateTeamModal.vue'
 import TeamDetailsModal from '@/components/TeamDetailsModal.vue'
 import type { Team } from '@/types'
+import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
 const { 
@@ -175,7 +178,8 @@ const {
   loadTeams, 
   subscribeToTeams,
   updateFilters,
-  clearFilters
+  clearFilters,
+  getUserTeams
 } = useTeams()
 
 // UI State
@@ -183,7 +187,8 @@ const showFilters = ref(false)
 const showCreateModal = ref(false)
 const showDetailsModal = ref(false)
 const selectedTeam = ref<Team | null>(null)
-const refreshTrigger = ref(0) // Add refresh trigger
+const refreshTrigger = ref(0)
+const { user } = useAuth()
 
 // Unsubscribe function
 let unsubscribe: (() => void) | null = null
@@ -216,6 +221,49 @@ const handleJoinRequested = () => {
 const handleRequestProcessed = () => {
   // Trigger refresh for team cards when requests are processed
   refreshTrigger.value++
+}
+
+const handleTeamDeleted = async () => {
+  try {
+    console.log('Team deleted event received, starting cleanup...')
+    
+    showDetailsModal.value = false
+    selectedTeam.value = null
+    
+    if (user.value?.uid) {
+      console.log('Reloading user teams after deletion...')
+      await getUserTeams() 
+    }
+
+    await loadTeams()
+    
+    refreshTrigger.value++
+    console.log('Refresh trigger incremented to:', refreshTrigger.value)
+
+    const toast = await toastController.create({
+      message: 'Drużyna została pomyślnie usunięta',
+      duration: 2000,
+      color: 'success',
+      position: 'bottom'
+    })
+    await toast.present()
+    
+    console.log('Team deletion cleanup completed successfully')
+    
+  } catch (error) {
+    console.error('Error during team deletion cleanup:', error)
+    
+    const toast = await toastController.create({
+      message: 'Wystąpił błąd podczas odświeżania danych',
+      duration: 3000,
+      color: 'danger',
+      position: 'bottom'
+    })
+    await toast.present()
+
+    showDetailsModal.value = false
+    selectedTeam.value = null
+  }
 }
 
 // Lifecycle

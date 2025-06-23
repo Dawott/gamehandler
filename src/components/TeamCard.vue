@@ -11,6 +11,16 @@
           >
             {{ pendingRequestsCount }}
           </ion-badge>
+          <ion-button
+  v-if="isUserOwner"
+  fill="clear"
+  size="small"
+  color="danger"
+  @click.stop="handleQuickDelete"
+  class="delete-button"
+>
+  <ion-icon :icon="trashOutline"></ion-icon>
+</ion-button>
         </div>
       <ion-card-subtitle>
         <ion-chip :color="isTeamFull ? 'danger' : 'success'">
@@ -80,6 +90,9 @@ import {
 import { useAuth } from '@/composables/useAuth'
 import { useJoinRequests } from '@/composables/useJoinRequests'
 import type { Team } from '@/types'
+import { trashOutline } from 'ionicons/icons'
+import { useTeams } from '@/composables/useTeams'
+import { alertController, toastController } from '@ionic/vue'
 
 // Props
 interface Props {
@@ -101,6 +114,7 @@ defineEmits<{
 // Composables
 const { user } = useAuth()
 const { getPendingRequestsCount } = useJoinRequests()
+const { deleteTeam } = useTeams()
 
 const pendingRequestsCount = ref(0)
 
@@ -145,6 +159,43 @@ const loadPendingRequestsCount = async () => {
     console.error('Error loading pending requests count:', error)
     pendingRequestsCount.value = 0
   }
+}
+
+const handleQuickDelete = async () => {
+  const alert = await alertController.create({
+    header: 'Usuń drużynę',
+    message: `Czy na pewno chcesz usunąć drużynę "${props.team.name}"?`,
+    buttons: [
+      {
+        text: 'Anuluj',
+        role: 'cancel'
+      },
+      {
+        text: 'Usuń',
+        role: 'destructive',
+        handler: async () => {
+          try {
+            await deleteTeam(props.team.id)
+            
+            const toast = await toastController.create({
+              message: 'Drużyna została usunięta',
+              duration: 2000,
+              color: 'success'
+            })
+            await toast.present()
+          } catch (error: any) {
+            const toast = await toastController.create({
+              message: error.message || 'Nie udało się usunąć drużyny',
+              duration: 2000,
+              color: 'danger'
+            })
+            await toast.present()
+          }
+        }
+      }
+    ]
+  })
+  await alert.present()
 }
 
 // Watch for team changes
@@ -213,5 +264,22 @@ ion-card:hover {
 
 ion-chip {
   margin: 0;
+}
+
+.delete-button {
+  margin-left: auto;
+}
+
+.card-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.title-section {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 </style>

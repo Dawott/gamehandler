@@ -80,6 +80,7 @@
       :team="selectedTeam"
       @close="showDetailsModal = false"
       @request-processed="handleRequestProcessed"
+      @team-deleted="handleTeamDeleted"
     />
   </ion-page>
 </template>
@@ -97,7 +98,8 @@ import {
   IonButton,
   IonSpinner,
   IonRefresher,
-  IonRefresherContent
+  IonRefresherContent,
+  toastController
 } from '@ionic/vue'
 import { peopleCircleOutline, addOutline, searchOutline, alertCircleOutline } from 'ionicons/icons'
 import { useAuth } from '@/composables/useAuth'
@@ -163,6 +165,54 @@ const handleRequestProcessed = async () => {
   await loadUserTeams()
   refreshTrigger.value++
   console.log('Refresh trigger incremented to:', refreshTrigger.value)
+}
+
+const handleTeamDeleted = async () => {
+  try {
+    console.log('Team deleted event received, starting cleanup...')
+    
+    // 1. Close any open modals immediately
+    showDetailsModal.value = false
+    selectedTeam.value = null
+ 
+    
+    // 3. Refresh team data from database
+    if (user.value?.uid) {
+      console.log('Reloading user teams after deletion...')
+      await loadUserTeams() 
+    }
+
+    // 5. Trigger component refresh for child components
+    refreshTrigger.value++
+    console.log('Refresh trigger incremented to:', refreshTrigger.value)
+    
+    // 6. Optional: Show success message to user
+    const toast = await toastController.create({
+      message: 'Drużyna została pomyślnie usunięta',
+      duration: 2000,
+      color: 'success',
+      position: 'bottom'
+    })
+    await toast.present()
+    
+    console.log('Team deletion cleanup completed successfully')
+    
+  } catch (error) {
+    console.error('Error during team deletion cleanup:', error)
+    
+    // Show error message to user
+    const toast = await toastController.create({
+      message: 'Wystąpił błąd podczas odświeżania danych',
+      duration: 3000,
+      color: 'danger',
+      position: 'bottom'
+    })
+    await toast.present()
+    
+    // Still close modal even if refresh fails
+    showDetailsModal.value = false
+    selectedTeam.value = null
+  }
 }
 
 watch(user, async (newUser, oldUser) => {
