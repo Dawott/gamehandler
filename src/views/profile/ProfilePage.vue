@@ -78,6 +78,7 @@
         </ion-card>
 
         <!-- Teams Card -->
+         <!--
         <ion-card>
           <ion-card-header>
             <ion-card-title>Moje drużyny</ion-card-title>
@@ -111,6 +112,29 @@
                   {{ team.ownerId === user?.uid ? 'Właściciel' : 'Członek' }}
                 </ion-badge>
               </ion-item>
+            </div>
+          </ion-card-content>
+        </ion-card>-->
+        <ion-card>
+          <ion-card-header>
+            <ion-card-title>Moje drużyny</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <div v-if="teamsLoading" class="teams-loading">
+              <ion-spinner></ion-spinner>
+              <p>Ładuję drużyny...</p>
+            </div>
+            <p v-else-if="!userTeams.length">
+             Brak drużyn. Odwiedź zakładkę z drużynami, by zapisać się do którejś
+            </p>
+            <div v-else class="teams-list">
+              <TeamCard
+                v-for="team in userTeams"
+                :key="team.id"
+                :team="team"
+                :refresh-trigger="refreshTrigger"
+                @click="openTeamDetails(team)"
+              />
             </div>
           </ion-card-content>
         </ion-card>
@@ -184,6 +208,7 @@ const isEditing = ref(false)
 const userTeams = ref<Team[]>([])
 const showDetailsModal = ref(false)
 const selectedTeam = ref<Team | null>(null)
+const refreshTrigger = ref(0)
 
 // Computed
 const hasSocialLinks = computed(() => {

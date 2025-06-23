@@ -10,7 +10,7 @@ export interface UserProfile {
     twitter?: string
     steam?: string
   }
-  teams: string[]
+  teams: Record<string, boolean>
   createdAt: string
   updatedAt: string
 }

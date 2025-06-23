@@ -85,10 +85,12 @@ import type { Team } from '@/types'
 interface Props {
   team: Team
   showNotifications?: boolean
+  refreshTrigger?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  showNotifications: true
+  showNotifications: true,
+  refreshTrigger: 0
 })
 
 // Emits
@@ -129,10 +131,16 @@ const truncateDescription = (description: string) => {
 }
 
 const loadPendingRequestsCount = async () => {
-  if (!props.showNotifications || !isUserOwner.value) return
+  if (!props.showNotifications || !isUserOwner.value) {
+    pendingRequestsCount.value = 0
+    return
+  }
   
   try {
-    pendingRequestsCount.value = await getPendingRequestsCount(props.team.id)
+    console.log('Loading pending requests count for team:', props.team.id)
+    const count = await getPendingRequestsCount(props.team.id)
+    pendingRequestsCount.value = count
+    console.log('Pending requests count loaded:', count)
   } catch (error) {
     console.error('Error loading pending requests count:', error)
     pendingRequestsCount.value = 0
@@ -147,7 +155,8 @@ watch(() => props.team, async () => {
 }, { immediate: true })
 
 // Load pending requests count on mount
-onMounted(async () => {
+watch(() => props.refreshTrigger, async () => {
+  console.log('Refresh trigger changed, reloading pending requests')
   if (isUserOwner.value) {
     await loadPendingRequestsCount()
   }

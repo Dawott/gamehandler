@@ -27,6 +27,7 @@
           v-for="team in userTeams"
           :key="team.id"
           :team="team"
+          :refresh-trigger="refreshTrigger"
           @click="openTeamDetails(team)"
         />
       </div>
@@ -48,6 +49,16 @@
             Przeglądaj drużyny
           </ion-button>
         </div>
+      </div>
+
+      <!-- Error State -->
+      <div v-if="error && !loading" class="error-state">
+        <ion-icon :icon="alertCircleOutline" size="large" color="danger"></ion-icon>
+        <h3>Błąd ładowania</h3>
+        <p>{{ error }}</p>
+        <ion-button @click="loadUserTeams" expand="block" fill="outline">
+          Spróbuj ponownie
+        </ion-button>
       </div>
 
       <!-- Refresh -->
@@ -74,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   IonPage,
@@ -88,7 +99,7 @@ import {
   IonRefresher,
   IonRefresherContent
 } from '@ionic/vue'
-import { peopleCircleOutline, addOutline, searchOutline } from 'ionicons/icons'
+import { peopleCircleOutline, addOutline, searchOutline, alertCircleOutline } from 'ionicons/icons'
 import { useAuth } from '@/composables/useAuth'
 import { useTeams } from '@/composables/useTeams'
 import TeamCard from '@/components/TeamCard.vue'
@@ -98,23 +109,35 @@ import type { Team } from '@/types'
 
 const router = useRouter()
 const { user } = useAuth()
-const { getUserTeams, loading } = useTeams()
+const { getUserTeams, loading, error } = useTeams()
 
 // State
 const userTeams = ref<Team[]>([])
 const showDetailsModal = ref(false)
 const showCreateModal = ref(false)
 const selectedTeam = ref<Team | null>(null)
+const refreshTrigger = ref(0)
 
 // Methods
 const loadUserTeams = async () => {
+  console.log('LoadUserTeams called, user:', user.value?.uid) // Debug log
   if (user.value) {
-    userTeams.value = await getUserTeams()
+    try {
+      const teams = await getUserTeams(user.value.uid)
+      userTeams.value = teams
+      console.log('Teams loaded in MyTeamsPage:', teams) // Debug log
+    } catch (err) {
+      console.error('Error in loadUserTeams:', err)
+    }
+  } else {
+    console.log('No user found, clearing teams') // Debug log
+    userTeams.value = []
   }
 }
 
 const handleRefresh = async (event: any) => {
   await loadUserTeams()
+  refreshTrigger.value++
   event.target.complete()
 }
 
@@ -131,16 +154,36 @@ const handleTeamCreated = async () => {
   showCreateModal.value = false
   // Reload user teams to show the newly created team
   await loadUserTeams()
+  refreshTrigger.value++
 }
 
 const handleRequestProcessed = async () => {
+  console.log('Request processed, refreshing data...')
   // Refresh team data to update member counts
   await loadUserTeams()
+  refreshTrigger.value++
+  console.log('Refresh trigger incremented to:', refreshTrigger.value)
 }
+
+watch(user, async (newUser, oldUser) => {
+  console.log('User changed in MyTeamsPage:', { 
+    old: oldUser?.uid, 
+    new: newUser?.uid 
+  }) 
+  
+  if (newUser?.uid) {
+    await loadUserTeams()
+  } else {
+    userTeams.value = []
+  }
+}, { immediate: true })
 
 // Lifecycle
 onMounted(async () => {
-  await loadUserTeams()
+  console.log('MyTeamsPage mounted, user:', user.value?.uid) // Debug log
+  if (user.value?.uid) {
+    await loadUserTeams()
+  }
 })
 </script>
 
@@ -190,5 +233,29 @@ onMounted(async () => {
   gap: 0.5rem;
   width: 100%;
   max-width: 280px;
+}
+
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  height: 60vh;
+}
+
+.error-state ion-icon {
+  margin-bottom: 1rem;
+}
+
+.error-state h3 {
+  color: var(--ion-color-danger);
+  margin-bottom: 0.5rem;
+}
+
+.error-state p {
+  color: var(--ion-color-medium);
+  margin-bottom: 1.5rem;
 }
 </style>

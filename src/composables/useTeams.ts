@@ -232,28 +232,45 @@ export function useTeams() {
     if (!uid) return []
 
     try {
+      loading.value = true 
+      error.value = null
+      
+      console.log('Loading teams for user:', uid) // Debug log
+      
       const userRef = dbRef(database, `users/${uid}`)
       const snapshot = await get(userRef)
       
       if (snapshot.exists() && snapshot.val().teams) {
-        const teamIds = Object.keys(snapshot.val().teams)
-        const userTeams: Team[] = []
+        const userTeams = snapshot.val().teams
+        console.log('User teams from database:', userTeams) // Debug log
+        
+        const teamIds = Object.keys(userTeams)
+        console.log('Team IDs to load:', teamIds) // Debug log
+        
+        const loadedTeams: Team[] = []
         
         for (const teamId of teamIds) {
           try {
             const team = await getTeam(teamId)
-            userTeams.push(team)
+            loadedTeams.push(team)
+            console.log('Loaded team:', team.name) // Debug log
           } catch (err) {
             console.error(`Error loading team ${teamId}:`, err)
           }
         }
         
-        return userTeams
+        console.log('Final loaded teams:', loadedTeams) // Debug log
+        return loadedTeams
+      } else {
+        console.log('No teams found for user or user not found') // Debug log
+        return []
       }
-      return []
     } catch (err) {
       console.error('Error loading user teams:', err)
+      error.value = 'Nie udało się załadować drużyn'
       return []
+    } finally {
+      loading.value = false
     }
   }
 

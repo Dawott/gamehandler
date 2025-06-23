@@ -94,6 +94,7 @@
           v-for="team in filteredTeams"
           :key="team.id"
           :team="team"
+          :refresh-trigger="refreshTrigger"
           @click="openTeamDetails(team)"
         />
       </div>
@@ -127,6 +128,7 @@
       :team="selectedTeam"
       @close="showDetailsModal = false"
       @join-requested="handleJoinRequested"
+      @request-processed="handleRequestProcessed"
     />
   </ion-page>
 </template>
@@ -162,9 +164,9 @@ import {
 } from 'ionicons/icons'
 import { useTeams } from '@/composables/useTeams'
 import { GAME_SYSTEMS, LOCATIONS } from '@/data/constants'
-import TeamCard from '../../components/TeamCard.vue'
-import CreateTeamModal from '../../components/CreateTeamModal.vue'
-import TeamDetailsModal from '../../components/TeamDetailsModal.vue'
+import TeamCard from '@/components/TeamCard.vue'
+import CreateTeamModal from '@/components/CreateTeamModal.vue'
+import TeamDetailsModal from '@/components/TeamDetailsModal.vue'
 import type { Team } from '@/types'
 
 const router = useRouter()
@@ -183,6 +185,7 @@ const showFilters = ref(false)
 const showCreateModal = ref(false)
 const showDetailsModal = ref(false)
 const selectedTeam = ref<Team | null>(null)
+const refreshTrigger = ref(0) // Add refresh trigger
 
 // Unsubscribe function
 let unsubscribe: (() => void) | null = null
@@ -190,6 +193,8 @@ let unsubscribe: (() => void) | null = null
 // Methods
 const handleRefresh = async (event: any) => {
   await loadTeams()
+  // Trigger refresh for team cards
+  refreshTrigger.value++
   event.target.complete()
 }
 
@@ -201,11 +206,18 @@ const openTeamDetails = (team: Team) => {
 const handleTeamCreated = () => {
   showCreateModal.value = false
   // Teams will auto-update due to subscription
+  refreshTrigger.value++
 }
 
 const handleJoinRequested = () => {
-  // Could show a toast here
   showDetailsModal.value = false
+  // Trigger refresh for team cards
+  refreshTrigger.value++
+}
+
+const handleRequestProcessed = () => {
+  // Trigger refresh for team cards when requests are processed
+  refreshTrigger.value++
 }
 
 // Lifecycle

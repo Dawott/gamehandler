@@ -78,6 +78,11 @@ export function useJoinRequests() {
       loading.value = true
       error.value = null
 
+      console.log('=== APPROVING REQUEST ===')
+      console.log('Request ID:', requestId)
+      console.log('Team ID:', teamId) 
+      console.log('User ID:', userId)
+
       // Get current team data
       const teamRef = dbRef(database, `teams/${teamId}`)
       const teamSnapshot = await get(teamRef)
@@ -97,38 +102,55 @@ export function useJoinRequests() {
       if (team.currentMembers >= team.maxMembers) {
         throw new Error('Zespół jest pełen')
       }
-
-      // Update multiple things in parallel
-      const updates: Record<string, any> = {}
-      
+/*
       // Update join request status
-      updates[`joinRequests/${requestId}/status`] = 'approved'
-      updates[`joinRequests/${requestId}/updatedAt`] = new Date().toISOString()
-      
-      // Add user to team members
-      //updates[`teams/${teamId}/members/${userId}`] = 'member'
-      //updates[`teams/${teamId}/currentMembers`] = team.currentMembers + 1
-      //updates[`teams/${teamId}/updatedAt`] = new Date().toISOString()
-      
-      // Add team to user's teams
-      //updates[`users/${userId}/teams/${teamId}`] = true
-
       await update(dbRef(database, `joinRequests/${requestId}`), {
         status: 'approved',
         updatedAt: new Date().toISOString()
       })
 
+      // Add user to team members
       await update(dbRef(database, `teams/${teamId}`), {
         [`members/${userId}`]: 'member',
         currentMembers: team.currentMembers + 1,
         updatedAt: new Date().toISOString()
-      })
+      })*/
       
-      await update(dbRef(database, `users/${userId}/teams`), {
+      const userRef = dbRef(database, `users/${userId}`)
+      const userSnapshot = await get(userRef)
+      
+      if (!userSnapshot.exists()) {
+        throw new Error('Profil użytkownika nie został znaleziony')
+      }
+
+      const currentProfile = userSnapshot.val()
+      const currentTeams = currentProfile.teams || {}
+
+      // ATOMIC UPDATE: Update all paths in one operation
+      const updates: Record<string, any> = {}
+      
+      // Update join request
+      updates[`joinRequests/${requestId}/status`] = 'approved'
+      updates[`joinRequests/${requestId}/updatedAt`] = new Date().toISOString()
+      
+      // Update team
+      updates[`teams/${teamId}/members/${userId}`] = 'member'
+      updates[`teams/${teamId}/currentMembers`] = team.currentMembers + 1
+      updates[`teams/${teamId}/updatedAt`] = new Date().toISOString()
+      
+      updates[`users/${userId}/teams`] = {
+        ...currentTeams,
         [teamId]: true
-      })
+      }
+      updates[`users/${userId}/updatedAt`] = new Date().toISOString()
+
+      console.log('Atomic updates:', updates)
       
+      await update(dbRef(database), updates)
+      
+      console.log('Request approved successfully')
       return true
+      
     } catch (err: any) {
       error.value = err.message || 'Nie udało się zaakceptować prośby'
       console.error('Błąd przy akceptowaniu prośby:', err)
@@ -139,12 +161,16 @@ export function useJoinRequests() {
   }
 
   // Reject a join request
-  const rejectRequest = async (requestId: string, teamId: string) => {
+   const rejectRequest = async (requestId: string, teamId: string) => {
     if (!user.value?.uid) throw new Error('Użytkownik nie jest uwierzytelniony')
 
     try {
       loading.value = true
       error.value = null
+
+      console.log('=== REJECTING REQUEST ===')
+      console.log('Request ID:', requestId)
+      console.log('Team ID:', teamId)
 
       // Verify user is team owner
       const teamRef = dbRef(database, `teams/${teamId}`)
@@ -160,14 +186,15 @@ export function useJoinRequests() {
         throw new Error('Jedynie właściciel zespołu może odrzucać prośby')
       }
 
-      // Update request status
-      const updates: Record<string, any> = {}
-      updates[`joinRequests/${requestId}/status`] = 'rejected'
-      updates[`joinRequests/${requestId}/updatedAt`] = new Date().toISOString()
-
-      await update(dbRef(database), updates)
+      // ONLY update the request status - don't touch team or user data
+      await update(dbRef(database, `joinRequests/${requestId}`), {
+        status: 'rejected',
+        updatedAt: new Date().toISOString()
+      })
       
+      console.log('Request rejected successfully')
       return true
+      
     } catch (err: any) {
       error.value = err.message || 'Nie udało się odrzucić prośby'
       console.error('Błąd odrzucania prośby:', err)

@@ -82,7 +82,7 @@ export function useProfile() {
           twitter: profileData.socials?.twitter || '',
           steam: profileData.socials?.steam || ''
         },
-        teams: [],
+        teams: {},  // ← Changed from [] to {}
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }
