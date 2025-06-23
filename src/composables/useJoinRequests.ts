@@ -106,14 +106,27 @@ export function useJoinRequests() {
       updates[`joinRequests/${requestId}/updatedAt`] = new Date().toISOString()
       
       // Add user to team members
-      updates[`teams/${teamId}/members/${userId}`] = 'member'
-      updates[`teams/${teamId}/currentMembers`] = team.currentMembers + 1
-      updates[`teams/${teamId}/updatedAt`] = new Date().toISOString()
+      //updates[`teams/${teamId}/members/${userId}`] = 'member'
+      //updates[`teams/${teamId}/currentMembers`] = team.currentMembers + 1
+      //updates[`teams/${teamId}/updatedAt`] = new Date().toISOString()
       
       // Add team to user's teams
-      updates[`users/${userId}/teams/${teamId}`] = true
+      //updates[`users/${userId}/teams/${teamId}`] = true
 
-      await update(dbRef(database), updates)
+      await update(dbRef(database, `joinRequests/${requestId}`), {
+        status: 'approved',
+        updatedAt: new Date().toISOString()
+      })
+
+      await update(dbRef(database, `teams/${teamId}`), {
+        [`members/${userId}`]: 'member',
+        currentMembers: team.currentMembers + 1,
+        updatedAt: new Date().toISOString()
+      })
+      
+      await update(dbRef(database, `users/${userId}/teams`), {
+        [teamId]: true
+      })
       
       return true
     } catch (err: any) {
