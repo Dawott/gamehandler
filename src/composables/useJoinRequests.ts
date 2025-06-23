@@ -45,14 +45,16 @@ export function useJoinRequests() {
                 id: requestId,
                 userName: userData?.name || 'Nieznany',
                 userLocation: userData?.location || '',
-                userGame: userData?.favoriteGame || ''
+                userGame: userData?.favoriteGame || '',
+                userAvatar: userData?.avatar || getDefaultAvatar()
               })
             } catch (err) {
               console.error('Błąd ładowania danych:', err)
               pendingRequests.push({
                 ...request,
                 id: requestId,
-                userName: 'Nieznany'
+                userName: 'Nieznany',
+                userAvatar: getDefaultAvatar()
               })
             }
           }

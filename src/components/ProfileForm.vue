@@ -15,13 +15,25 @@
           <!-- Avatar Section -->
           <div class="avatar-section">
             <ion-avatar>
+              <img 
+                v-if="formData.avatar" 
+                :src="getAvatarDisplaySrc(formData.avatar)" 
+                alt="Awatar użytkownika"
+                @error="handleImageError"
+              />
               <ion-icon 
+                v-else
                 :icon="personOutline" 
                 size="large"
                 :style="{ color: 'var(--ion-color-primary)' }"
               ></ion-icon>
             </ion-avatar>
-            <ion-button fill="outline" size="small" disabled>
+            <ion-button 
+              fill="outline" 
+              size="small" 
+              @click="showAvatarSelector = true"
+              :disabled="loading"
+            >
               Zmień awatar
             </ion-button>
           </div>

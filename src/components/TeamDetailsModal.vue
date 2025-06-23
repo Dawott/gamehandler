@@ -86,7 +86,16 @@
             >
               <div class="request-info">
                 <ion-avatar>
-                  <ion-icon :icon="personOutline"></ion-icon>
+                  <img 
+                    v-if="request.userAvatar" 
+                    :src="getAvatarDisplaySrc(request.userAvatar)" 
+                    alt="Awatar użytkownika"
+                    @error="handleAvatarError"
+                  />
+                  <ion-icon 
+                    v-else 
+                    :icon="personOutline"
+                  ></ion-icon>
                 </ion-avatar>
                 <div class="request-details">
                   <h4>{{ request.userName }}</h4>

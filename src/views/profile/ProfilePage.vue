@@ -33,7 +33,17 @@
       <div v-else class="profile-display">
         <div class="profile-header">
           <ion-avatar>
-            <ion-icon :icon="personOutline" size="large"></ion-icon>
+            <img 
+              v-if="profile?.avatar" 
+              :src="getAvatarDisplaySrc(profile.avatar)" 
+              alt="Awatar użytkownika"
+              @error="handleAvatarError"
+            />
+            <ion-icon 
+              v-else 
+              :icon="personOutline" 
+              size="large"
+            ></ion-icon>
           </ion-avatar>
           <h2>{{ profile?.name }}</h2>
           <p>{{ profile?.email }}</p>
