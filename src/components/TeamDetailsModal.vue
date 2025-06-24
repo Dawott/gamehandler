@@ -176,7 +176,12 @@
         </ion-card-header>
         <ion-card-content>
           <ion-list>
-            <ion-item v-for="(role, userId) in team.members" :key="userId">
+            <ion-item 
+              v-for="(role, userId) in team.members" 
+              :key="userId"
+              button
+              @click="openUserProfile(userId)"
+            >
              <ion-avatar slot="start">
                 <img 
                   v-if="memberAvatars[userId]" 
@@ -251,6 +256,11 @@
         </ion-button>
       </div>
     </ion-content>
+     <UserProfileModal
+      :is-open="showUserProfile"
+      :user-id="selectedUserId"
+      @close="closeUserProfile"
+    />
   </ion-modal>
 </template>
 
@@ -294,6 +304,7 @@ import { useProfile } from '@/composables/useProfile'
 import type { Team, JoinRequest } from '@/types'
 import { useJoinRequests } from '@/composables/useJoinRequests'
 import { getAvatarDisplaySrc, getDefaultAvatar, isUploadedAvatar } from '@/utils/avatars'
+import UserProfileModal from '@/components/UserProfileModal.vue'
 
 // Props
 interface Props {
@@ -309,6 +320,7 @@ const emit = defineEmits<{
   'join-requested': []
   'request-processed': []
 }>()
+
 
 // Composables
 const { user } = useAuth()
@@ -327,6 +339,18 @@ const memberNames = ref<Record<string, string>>({})
 const pendingRequests = ref<any[]>([])
 const hasPendingRequest = ref(false)
 const memberAvatars = ref<Record<string, string>>({})
+const showUserProfile = ref(false)
+const selectedUserId = ref<string | null>(null)
+
+const openUserProfile = (userId: string) => {
+  selectedUserId.value = userId
+  showUserProfile.value = true
+}
+
+const closeUserProfile = () => {
+  showUserProfile.value = false
+  selectedUserId.value = null
+}
 
 // Computed
 const isTeamFull = computed(() => {
