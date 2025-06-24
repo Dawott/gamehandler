@@ -90,7 +90,7 @@
                     v-if="request.userAvatar" 
                     :src="getAvatarDisplaySrc(request.userAvatar)" 
                     alt="Awatar użytkownika"
-                    @error="handleAvatarError"
+                    @error="handleAvatarError($event, 'request-' + request.id)"
                   />
                   <ion-icon 
                     v-else 
@@ -177,9 +177,17 @@
         <ion-card-content>
           <ion-list>
             <ion-item v-for="(role, userId) in team.members" :key="userId">
-                
-              <ion-avatar>
-                <ion-icon :icon="personOutline" slot="start"></ion-icon>
+             <ion-avatar slot="start">
+                <img 
+                  v-if="memberAvatars[userId]" 
+                  :src="getAvatarDisplaySrc(memberAvatars[userId])" 
+                  alt="Awatar członka drużyny"
+                  @error="handleAvatarError($event, 'member-' + userId)"
+                />
+                <ion-icon 
+                  v-else 
+                  :icon="personOutline"
+                ></ion-icon>
               </ion-avatar>
               <ion-label>
                 <h3>{{ memberNames[userId] || 'Ładowanie...' }}</h3>
@@ -285,6 +293,7 @@ import { useTeams } from '@/composables/useTeams'
 import { useProfile } from '@/composables/useProfile'
 import type { Team, JoinRequest } from '@/types'
 import { useJoinRequests } from '@/composables/useJoinRequests'
+import { getAvatarDisplaySrc, getDefaultAvatar, isUploadedAvatar } from '@/utils/avatars'
 
 // Props
 interface Props {
@@ -317,6 +326,7 @@ const ownerName = ref<string>('')
 const memberNames = ref<Record<string, string>>({})
 const pendingRequests = ref<any[]>([])
 const hasPendingRequest = ref(false)
+const memberAvatars = ref<Record<string, string>>({})
 
 // Computed
 const isTeamFull = computed(() => {
@@ -348,8 +358,12 @@ const loadMemberNames = async () => {
     try {
       const profile = await loadProfile(userId)
       memberNames.value[userId] = profile?.name || 'Nieznany'
+
+      const avatarPath = profile?.avatar || getDefaultAvatar()
+      memberAvatars.value[userId] = avatarPath
     } catch (err) {
       memberNames.value[userId] = 'Nieznany'
+      memberAvatars.value[userId] = getDefaultAvatar()
     }
   }
 }
@@ -402,11 +416,20 @@ const handleJoinRequest = async () => {
 
 const loadPendingRequests = async () => {
   if (!props.team || !isUserOwner.value) return
-  
+ 
   try {
-    pendingRequests.value = await getPendingRequests(props.team.id)
+    console.log('Loading pending requests...')
+    const requests = await getPendingRequests(props.team.id)
+    pendingRequests.value = requests
+   
+    // Now works with optional userAvatar
+    console.log('Loaded pending requests:', requests.map(r => ({
+      user: r.userName,
+      avatar: isUploadedAvatar(r.userAvatar) ? 'Załadowany awatar' : (r.userAvatar || 'Brak awatara')
+    })))
+   
   } catch (error) {
-    console.error('Błąd ładowania próśb:', error)
+    console.error('Error loading pending requests:', error)
   }
 }
 
@@ -503,11 +526,29 @@ const formatDate = (dateString: string) => {
   })
 }
 
+const handleAvatarError = (event: Event, context: string) => {
+  console.warn(`Avatar failed to load for ${context}`)
+  
+  // Hide broken image
+  const target = event.target as HTMLImageElement
+  target.style.display = 'none'
+  
+  // Optional: Update data with fallback
+  if (context.startsWith('member-')) {
+    const userId = context.replace('member-', '')
+    memberAvatars.value[userId] = getDefaultAvatar()
+  }
+}
+
 
 
 // Watch for team changes
 watch(() => props.team, async (newTeam) => {
   if (newTeam) {
+memberNames.value = {}
+    memberAvatars.value = {}
+    pendingRequests.value = []
+
     await Promise.all([
       loadMemberNames(),
       checkRequestStatus(),
@@ -622,6 +663,10 @@ ion-card {
   gap: 0.5rem;
 }
 
+.request-date {
+  font-size: 0.8rem !important;
+}
+
 .loading-requests {
   display: flex;
   flex-direction: column;
@@ -638,5 +683,20 @@ ion-card {
 
 ion-badge {
   margin-left: 0.5rem;
+}
+
+ion-item {
+  --background: transparent;
+  margin-bottom: 0.5rem;
+}
+
+ion-avatar {
+  width: 48px;
+  height: 48px;
+}
+
+.request-info ion-avatar {
+  width: 60px;
+  height: 60px;
 }
 </style>

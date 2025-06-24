@@ -32,14 +32,16 @@ export const getDefaultAvatar = (): string => {
 /**
  * Check if avatar is a base64 uploaded image
  */
-export const isUploadedAvatar = (avatarPath: string): boolean => {
+export const isUploadedAvatar = (avatarPath?: string): boolean => {
+  if (!avatarPath) return false
   return avatarPath.startsWith('data:image/')
 }
 
 /**
  * Validate if an avatar path exists in our available avatars or is uploaded
  */
-export const isValidAvatarPath = (path: string): boolean => {
+export const isValidAvatarPath = (path?: string): boolean => {
+  if (!path) return false
   return isUploadedAvatar(path) || AVAILABLE_AVATARS.some(avatar => avatar.path === path)
 }
 
@@ -57,6 +59,7 @@ export const getAvatarPath = (avatarPath?: string): string => {
  * Get avatar name by path
  */
 export const getAvatarName = (path: string): string => {
+  if (!path) return 'Domyślny'
   if (isUploadedAvatar(path)) {
     return 'Przesłany awatar'
   }

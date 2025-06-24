@@ -37,7 +37,6 @@
               v-if="profile?.avatar" 
               :src="getAvatarDisplaySrc(profile.avatar)" 
               alt="Awatar użytkownika"
-              @error="handleAvatarError"
             />
             <ion-icon 
               v-else 
@@ -208,6 +207,7 @@ import { useTeams } from '@/composables/useTeams'
 import ProfileForm from '@/components/ProfileForm.vue'
 import TeamDetailsModal from '@/components/TeamDetailsModal.vue'
 import type { Team } from '@/types'
+import { getAvatarDisplaySrc, getDefaultAvatar, isUploadedAvatar } from '@/utils/avatars'
 
 const router = useRouter()
 const { user, loading, logout } = useAuth()
@@ -219,6 +219,8 @@ const userTeams = ref<Team[]>([])
 const showDetailsModal = ref(false)
 const selectedTeam = ref<Team | null>(null)
 const refreshTrigger = ref(0)
+
+
 
 // Computed
 const hasSocialLinks = computed(() => {
@@ -269,6 +271,7 @@ const openTeamDetails = (team: Team) => {
   selectedTeam.value = team
   showDetailsModal.value = true
 }
+
 
 // Watch for user changes
 watch(user, async (newUser) => {

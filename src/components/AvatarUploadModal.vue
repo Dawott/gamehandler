@@ -54,9 +54,9 @@
           <ion-label>Jakość kompresji</ion-label>
           <ion-range
             v-model="compressionQuality"
-            min="0.1"
-            max="1"
-            step="0.1"
+            :min="0.1"
+            :max="1"
+            :step="0.1"
             :pin="true"
             @ionInput="updatePreview"
           >

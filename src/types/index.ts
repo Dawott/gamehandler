@@ -34,6 +34,7 @@ export interface JoinRequest {
   id: string
   teamId: string
   userId: string
+  userAvatar?: string
   status: 'pending' | 'approved' | 'rejected'
   createdAt: string
   updatedAt: string

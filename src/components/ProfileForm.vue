@@ -157,6 +157,13 @@
       </ion-card-content>
     </ion-card>
 
+    <AvatarSelector
+  :is-open="showAvatarSelector"
+  :current-avatar="formData.avatar"
+  @close="showAvatarSelector = false"
+  @select="handleAvatarSelect"
+/>
+
     <!-- Error Alert -->
     <ion-alert
       :is-open="!!error"
@@ -206,6 +213,8 @@ import {
 import { LOCATIONS, GAME_SYSTEMS } from '@/data/constants'
 import { useProfile } from '@/composables/useProfile'
 import type { UserProfile } from '@/types'
+import { getAvatarDisplaySrc, getDefaultAvatar, isUploadedAvatar } from '@/utils/avatars'
+import AvatarSelector from './AvatarSelector.vue'
 
 defineOptions({
   name: 'ProfileForm'
@@ -236,6 +245,7 @@ const formData = ref({
   name: '',
   location: '',
   favoriteGame: '',
+  avatar: '',
   socials: {
     discord: '',
     twitter: '',
@@ -245,6 +255,7 @@ const formData = ref({
 
 // UI state
 const showSuccessToast = ref(false)
+const showAvatarSelector = ref(false)
 
 // Computed
 const isFormValid = computed(() => {
@@ -284,6 +295,37 @@ const handleSubmit = async () => {
   }
 }
 
+const handleAvatarButtonClick = () => {
+  console.log('🔄 Avatar button clicked!')
+  console.log('🔍 Current showAvatarSelector:', showAvatarSelector.value)
+  
+  showAvatarSelector.value = true
+  
+  console.log('✅ Set showAvatarSelector to:', showAvatarSelector.value)
+
+}
+
+const handleAvatarSelectorClose = () => {
+  console.log('🚪 Avatar selector closing')
+  showAvatarSelector.value = false
+}
+
+const handleImageError = (event: Event) => {
+  console.warn('Avatar image failed to load, falling back to default')
+  // Fallback to default avatar if image fails to load
+  formData.value.avatar = getDefaultAvatar()
+  
+  // Optional: Hide the broken image
+  const target = event.target as HTMLImageElement
+  target.style.display = 'none'
+}
+
+const handleAvatarSelect = (avatarPath: string) => {
+  console.log('Avatar selected:', avatarPath.substring(0, 50) + '...')
+  formData.value.avatar = avatarPath
+  showAvatarSelector.value = false
+}
+
 // Initialize form with existing data
 watch(() => props.initialData, (newData) => {
   if (newData) {
@@ -291,6 +333,7 @@ watch(() => props.initialData, (newData) => {
       name: newData.name || '',
       location: newData.location || '',
       favoriteGame: newData.favoriteGame || '',
+      avatar: newData.avatar || getDefaultAvatar(),
       socials: {
         discord: newData.socials?.discord || '',
         twitter: newData.socials?.twitter || '',

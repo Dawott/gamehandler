@@ -12,6 +12,7 @@ import {
 import { database } from '@/firebase/config'
 import { useAuth } from './useAuth'
 import type { JoinRequest, Team } from '@/types'
+import { getDefaultAvatar } from '@/utils/avatars'
 
 export function useJoinRequests() {
   const { user } = useAuth()
