@@ -14,6 +14,7 @@ import {
 import { database } from '@/firebase/config'
 import { useAuth } from './useAuth'
 import type { Team, JoinRequest } from '@/types'
+import { useTeamChat } from './useTeamChat'
 
 export function useTeams() {
   const { user } = useAuth()
@@ -125,6 +126,9 @@ export function useTeams() {
       await update(userTeamsRef, {
         [newTeam.id]: true
       })
+
+      const teamChat = useTeamChat(newTeam.id)
+    await teamChat.sendSystemMessage(`Drużyna "${newTeam.name}" została utworzona! Witajcie w czacie!`)
       
       return newTeam
     } catch (err: any) {

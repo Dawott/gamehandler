@@ -13,6 +13,7 @@ import { database } from '@/firebase/config'
 import { useAuth } from './useAuth'
 import type { JoinRequest, Team } from '@/types'
 import { getDefaultAvatar } from '@/utils/avatars'
+import { useTeamChat } from './useTeamChat'
 
 export function useJoinRequests() {
   const { user } = useAuth()
@@ -128,6 +129,11 @@ export function useJoinRequests() {
 
       const currentProfile = userSnapshot.val()
       const currentTeams = currentProfile.teams || {}
+
+      const userName = userSnapshot.exists() ? userSnapshot.val().name : 'Nowy członek'
+    
+    const teamChat = useTeamChat(teamId)
+    await teamChat.sendSystemMessage(`${userName} dołączył do drużyny! 🎉`)
 
       // ATOMIC UPDATE: Update all paths in one operation
       const updates: Record<string, any> = {}

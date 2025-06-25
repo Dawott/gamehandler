@@ -284,6 +284,20 @@
       </ion-card>
 
       <!-- Action Section -->
+      <ion-button 
+    v-if="isUserMember"
+    expand="block"
+    color="secondary"
+    @click="showChatModal = true"
+    class="action-button chat-button"
+  >
+    <ion-icon :icon="chatbubblesOutline" slot="start" class="button-icon"></ion-icon>
+    Czat drużyny
+    <ion-badge v-if="newMessagesCount > 0" color="warning" class="chat-badge">
+      {{ newMessagesCount }}
+    </ion-badge>
+  </ion-button>
+
        <div class="action-section animate-slide-up" style="animation-delay: 0.5s" >
         <ion-button 
           v-if="isUserOwner"
@@ -352,6 +366,12 @@
       @close="closeUserProfile"
     />
   </ion-modal>
+
+<TeamChatModal
+  :is-open="showChatModal"
+  :team="team"
+  @close="showChatModal = false"
+/>
 </template>
 
 <script setup lang="ts">
@@ -400,6 +420,8 @@ import type { Team, JoinRequest } from '@/types'
 import { useJoinRequests } from '@/composables/useJoinRequests'
 import { getAvatarDisplaySrc, getDefaultAvatar, isUploadedAvatar } from '@/utils/avatars'
 import UserProfileModal from '@/components/UserProfileModal.vue'
+import TeamChatModal from '@/components/TeamChatModal.vue'
+import { chatbubblesOutline } from 'ionicons/icons'
 
 // Props
 interface Props {
@@ -427,6 +449,7 @@ const {
 const { requestJoinTeam, checkPendingRequest, loading } = useTeams()
 const { loadProfile, profile } = useProfile()
 
+
 // State
 const ownerName = ref<string>('')
 const memberNames = ref<Record<string, string>>({})
@@ -435,6 +458,8 @@ const hasPendingRequest = ref(false)
 const memberAvatars = ref<Record<string, string>>({})
 const showUserProfile = ref(false)
 const selectedUserId = ref<string | null>(null)
+const showChatModal = ref(false)
+const newMessagesCount = ref(0)
 
 // Computed
 const isTeamFull = computed(() => {
@@ -1455,5 +1480,26 @@ watch(() => props.team, async (newTeam) => {
   .request-actions {
     justify-content: center;
   }
+}
+
+.chat-button {
+  position: relative;
+  --background: linear-gradient(135deg, var(--ion-color-secondary), var(--ion-color-secondary-shade));
+}
+
+.chat-button:hover {
+  --background: linear-gradient(135deg, var(--ion-color-secondary-shade), var(--ion-color-secondary-tint));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.chat-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  min-width: 20px;
+  height: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
 }
 </style>
