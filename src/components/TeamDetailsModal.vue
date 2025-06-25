@@ -283,6 +283,34 @@
         </ion-card-content>
       </ion-card>
 
+      <!-- Photos -->
+      <ion-card 
+  v-if="isUserMember" 
+  class="photos-card animate-slide-up" 
+  style="animation-delay: 0.5s"
+>
+  <ion-card-header class="card-header">
+    <ion-card-title class="card-title">
+      <ion-icon :icon="imagesOutline" class="title-icon"></ion-icon>
+      Galeria Zdjęć
+      <ion-badge 
+        v-if="photoCount > 0" 
+        color="primary" 
+        class="photo-count-badge animate-bounce-in"
+      >
+        {{ photoCount }}
+      </ion-badge>
+    </ion-card-title>
+  </ion-card-header>
+  
+  <ion-card-content class="card-content photos-content">
+    <TeamPhotoGallery
+      :team-id="team.id"
+      :is-owner="isUserOwner"
+      :is-member="isUserMember"
+    />
+  </ion-card-content>
+</ion-card>
       <!-- Action Section -->
       <ion-button 
     v-if="isUserMember"
@@ -411,7 +439,8 @@ import {
   documentTextOutline,
   checkmarkCircleOutline,
   lockClosedOutline,
-  addOutline
+  addOutline,
+  imagesOutline
 } from 'ionicons/icons'
 import { useAuth } from '@/composables/useAuth'
 import { useTeams } from '@/composables/useTeams'
@@ -422,6 +451,9 @@ import { getAvatarDisplaySrc, getDefaultAvatar, isUploadedAvatar } from '@/utils
 import UserProfileModal from '@/components/UserProfileModal.vue'
 import TeamChatModal from '@/components/TeamChatModal.vue'
 import { chatbubblesOutline } from 'ionicons/icons'
+import TeamPhotoGallery from '@/components/TeamPhotoGallery.vue'
+import { get, ref as dbRef } from 'firebase/database'
+import { database} from '@/firebase/config'
 
 // Props
 interface Props {
@@ -448,6 +480,7 @@ const {
 } = useJoinRequests()
 const { requestJoinTeam, checkPendingRequest, loading } = useTeams()
 const { loadProfile, profile } = useProfile()
+const photoCount = ref(0)
 
 
 // State
@@ -467,7 +500,7 @@ const isTeamFull = computed(() => {
 })
 
 const isUserOwner = computed(() => {
-  return user.value && props.team && props.team.ownerId === user.value.uid
+  return !!(user.value && props.team && props.team.ownerId === user.value.uid)
 })
 
 const isUserMember = computed(() => {
@@ -669,17 +702,37 @@ const handleAvatarError = (event: Event, context: string) => {
   }
 }
 
+const loadPhotoCount = async () => {
+  if (!props.team) return
+  
+  try {
+    const photosRef = dbRef(database, `teamPhotos/${props.team.id}`)
+    const snapshot = await get(photosRef)
+    
+    if (snapshot.exists()) {
+      photoCount.value = Object.keys(snapshot.val()).length
+    } else {
+      photoCount.value = 0
+    }
+  } catch (error) {
+    console.error('Error loading photo count:', error)
+    photoCount.value = 0
+  }
+}
+
 // Watch for team changes
 watch(() => props.team, async (newTeam) => {
   if (newTeam) {
     memberNames.value = {}
     memberAvatars.value = {}
     pendingRequests.value = []
+    photoCount.value = 0
 
     await Promise.all([
       loadMemberNames(),
       checkRequestStatus(),
       loadProfile(),
+      loadPhotoCount(),
       isUserOwner.value ? loadPendingRequests() : Promise.resolve()
     ])
   }
@@ -1501,5 +1554,28 @@ watch(() => props.team, async (newTeam) => {
   height: 20px;
   font-size: 0.7rem;
   font-weight: 700;
+}
+
+.photos-card {
+  margin: 1rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--ion-color-light-shade);
+  overflow: hidden;
+}
+
+.photos-content {
+  padding: 1rem;
+}
+
+.photo-count-badge {
+  margin-left: auto;
+  font-weight: 700;
+  min-width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
 }
 </style>
