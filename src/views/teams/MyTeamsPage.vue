@@ -109,7 +109,7 @@
 
           <!-- Filter & View Options -->
           <div class="view-options">
-            <ion-segment v-model="filterBy" class="filter-segment">
+            <ion-segment v-model="filterBy" class="view-segment">
               <ion-segment-button value="all">
                 <ion-label>Wszystkie</ion-label>
               </ion-segment-button>
@@ -120,7 +120,8 @@
                 <ion-label>Członek</ion-label>
               </ion-segment-button>
             </ion-segment>
-
+            </div>
+            <div class="view-options">
             <ion-segment v-model="viewMode" class="view-segment">
               <ion-segment-button value="grid">
                 <ion-icon :icon="gridOutline"></ion-icon>
@@ -132,7 +133,7 @@
           </div>
 
           <div class="results-info">
-            <span class="results-count">{{ filteredTeams.length }} drużyn</span>
+            <span class="results-count">Drużyn: {{ filteredTeams.length }}</span>
           </div>
         </div>
       </div>

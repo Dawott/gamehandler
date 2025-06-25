@@ -284,7 +284,7 @@
       </ion-card>
 
       <!-- Action Section -->
-      <div class="action-section animate-slide-up" style="animation-delay: 0.5s">
+       <div class="action-section animate-slide-up" style="animation-delay: 0.5s" >
         <ion-button 
           v-if="isUserOwner"
           expand="block"
@@ -329,7 +329,7 @@
         
         <ion-button 
           v-else
-          expand="block"
+          expand="full"
           @click="handleJoinRequest"
           :disabled="loading"
           class="action-button join-button"
@@ -343,6 +343,7 @@
           {{ loading ? 'Wysyłanie...' : 'Poproś o dołączenie' }}
         </ion-button>
       </div>
+     
     </ion-content>
     
     <UserProfileModal
@@ -1218,8 +1219,9 @@ watch(() => props.team, async (newTeam) => {
 
 .action-button {
   --border-radius: 12px;
-  width: 44px;
+  width: max-content;
   height: 44px;
+  display: flex;
   transition: all 0.2s ease;
 }
 
@@ -1351,6 +1353,7 @@ watch(() => props.team, async (newTeam) => {
 
 /* Action section */
 .action-section {
+  
   padding: 1rem 1.5rem 2rem 1.5rem;
 }
 
